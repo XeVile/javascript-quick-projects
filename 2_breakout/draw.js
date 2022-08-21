@@ -81,16 +81,17 @@ function collisionBall() {
   if (y + bY < ballRadius) {
     dy = -dy;
   }
-  if (x + bX < ballRadius || x + bX > canvas.width - ballRadius) {
+  if (x + bX < ballRadius || x > canvas.width - ballRadius) {
     dx = -dx;
   }
 
   if ((x > padX && x < padX + padWidth) && (y + bY > canvas.height - padHeight - ballRadius)) {
     dy = -0.52 - dy;
-  } else if (y + bY > canvas.height - ballRadius) {
-    alert("GAME OVER!");
-    document.location.reload();
-    clearInterval(interval);
+  } else if (y + bY >= canvas.height - ballRadius) {
+    destroyEventListeners();
+    if (!alert("GAME OVER!")) {
+      document.location.reload();
+    }
   }
 }
 
@@ -110,10 +111,8 @@ function collisionWall() {
               function() {
                 alert("You Win!");
                 document.location.reload();
-                clearInterval(interval);
-              },
-              2000
-            );
+                requestAnimationFrame(draw);
+              }, 2000);
           }
         }
       }
@@ -137,6 +136,18 @@ function keyUpHandler(e) {
   }
 }
 
+function mouseMoveHandler(e) {
+  const relativeX = e.clientX - canvas.offsetLeft;
+  if (relativeX > 0 && relativeX < canvas.width) {
+    padX = relativeX - padWidth/2;
+  }
+}
+
+function destroyEventListeners() {
+  let newCanvas = canvas.cloneNode(true);
+  canvas.parentNode.replaceChild(newCanvas, canvas);
+}
+
 function padEvent() {
   if (r_press) {
     padX = Math.min(padX + 7, canvas.width - padWidth);
@@ -147,8 +158,17 @@ function padEvent() {
 
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
+document.addEventListener("mousemove", mouseMoveHandler, false);
 
 let wall = buildWall();
+
+function randomizeBall(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+let speed = randomizeBall(0.75, 3.5);
+let xDirec = randomizeBall(-0.1, 0.1);
+let angle = randomizeBall(0.3, 1.3);
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -163,8 +183,18 @@ function draw() {
 
   drawScore();
 
-  x += 0.5*dx;
-  y += 0.75*dy;
+  if (xDirec < 0) {
+    x -= speed*dx;
+  } else {
+    x += speed*dx;
+  }
+  if (speed > 2) {
+    y += angle*speed*dy;
+  } else {
+    y += speed*dy;
+  }
+
+  requestAnimationFrame(draw);
 }
 
-const interval = setInterval(draw, 10);
+draw();
